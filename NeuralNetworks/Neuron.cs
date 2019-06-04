@@ -6,22 +6,45 @@ namespace NeuralNetworks
     public class Neuron
     {
         public List<double> Weights { get; }
+        public List<double> Inputs { get; }
         public NeuronType NeuronType { get; }
         public double Output { get; private set; }
+        public double Delta { get; private set; }
 
         public Neuron(int inputCount, NeuronType type = NeuronType.Normal)
         {
             NeuronType = type;
             Weights = new List<double>();
+            Inputs = new List<double>();
 
-            for(int i = 0; i < inputCount; i++)
+            InitWeightsRandomValue(inputCount);
+        }
+
+        private void InitWeightsRandomValue(int inputCount)
+        {
+            var rnd = new Random();
+
+            for (int i = 0; i < inputCount; i++)
             {
-                Weights.Add(1);
+                if (NeuronType == NeuronType.Input)
+                {
+                    Weights.Add(1);
+                }
+                else
+                {
+                    Weights.Add(rnd.NextDouble());
+                }
+                Inputs.Add(0);
             }
         }
 
         public double FeedForward(List<double> inputs)
         {
+            for(int i = 0; i < inputs.Count; i++)
+            {
+                Inputs[i] = inputs[i];
+            }
+
             var sum = 0.0;
             for(int i = 0; i < inputs.Count; i++)
             {
@@ -46,12 +69,29 @@ namespace NeuralNetworks
             return result;
         }
 
-        public void SetWeights(params double[] weights)
+        private double SigmoidDx(double x)
         {
-            // TODO: удалить после добавления возможности обучения сети.
-            for(int i = 0; i < weights.Length; i++)
+            var sigmoid = Sigmoid(x);
+            var result = sigmoid / (1 - sigmoid);
+            return result;
+        }
+
+        public void Learn(double error, double learningRate)
+        {
+            if(NeuronType == NeuronType.Input)
             {
-                Weights[i] = weights[i];
+                return;
+            }
+
+            Delta = error * SigmoidDx(Output);
+
+            for(int i = 0; i < Weights.Count; i++)
+            {
+                var weight = Weights[i];
+                var input = Inputs[i];
+
+                var newWeigth = weight - input * Delta * learningRate;
+                Weights[i] = newWeigth;
             }
         }
 
